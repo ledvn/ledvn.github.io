@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LED MATRIX PRO V2.0</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Roboto:wght@900&display=swap');
+
+        :root {
+            --bg-color: #050505;
+            --panel-bg: #111;
+            --accent-color: #00ffcc;
+            --text-color: #eee;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* --- LED BOARD AREA --- */
+        #led-wrapper {
+            margin-top: 20px;
+            padding: 10px;
+            background: #000;
+            border: 4px solid #333;
+            border-radius: 8px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            position: relative;
+            /* Giữ tỷ lệ khung hình */
+            width: 95%;
+            max-width: 1200px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        canvas {
+            background: #000;
+            cursor: pointer;
+            width: 100%; /* Responsive */
+            image-rendering: pixelated; /* Giữ độ sắc nét */
+        }
+
+        /* --- CONTROLS UI --- */
+        .ui-panel {
+            background: var(--panel-bg);
+            width: 95%;
+            max-width: 1000px;
+            margin: 20px;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #333;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+
+        h2 { grid-column: 1 / -1; margin: 0 0 10px 0; font-size: 1.2rem; color: var(--accent-color); border-bottom: 1px solid #333; padding-bottom: 10px; text-transform: uppercase;}
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            background: rgba(255,255,255,0.03);
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        label { font-size: 0.8rem; color: #aaa; font-weight: bold; text-transform: uppercase; }
+
+        input, select {
+            background: #222; border: 1px solid #444; color: #fff;
+            padding: 8px; border-radius: 4px; outline: none; font-size: 0.9rem;
+        }
+        input:focus, select:focus { border-color: var(--accent-color); }
+
+        input[type="range"] { height: 5px; -webkit-appearance: none; background: #444; border-radius: 5px; margin-top: 10px;}
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 15px; height: 15px; background: var(--accent-color); border-radius: 50%; cursor: pointer; }
+
+        input[type="color"] { height: 40px; width: 100%; cursor: pointer; border: none; padding: 0;}
+
+        /* Buttons */
+        .btn-group { display: flex; gap: 5px; flex-wrap: wrap; }
+        button {
+            flex: 1; padding: 8px; border: none; border-radius: 4px;
+            background: #333; color: #fff; cursor: pointer; font-size: 0.8rem;
+            transition: 0.2s; font-weight: bold;
+        }
+        button:hover { background: var(--accent-color); color: #000; }
+        button.active { background: var(--accent-color); color: #000; box-shadow: 0 0 10px var(--accent-color); }
+        
+        button.fullscreen {
+            grid-column: 1 / -1;
+            background: linear-gradient(90deg, #ff416c, #ff4b2b);
+            padding: 15px; font-size: 1rem; margin-top: 10px;
+        }
+
+        /* Preset Buttons */
+        .preset-btn { background: #2a2a2a; border: 1px solid #444; }
+
+        /* Fullscreen Styles */
+        :fullscreen #led-wrapper {
+            width: 100vw; height: 100vh; margin: 0; border: none;
+            background: #000; padding: 0; max-width: none;
+        }
+        :fullscreen canvas { height: 100%; object-fit: contain; }
+        :fullscreen .ui-panel { display: none; }
+
+    </style>
+</head>
+<body>
+
+    <div id="led-wrapper">
+        <canvas id="mainCanvas"></canvas>
+    </div>
+
+    <div class="ui-panel">
+        <h2>Bảng Điều Khiển</h2>
+
+        <div class="control-group" style="grid-column: 1 / -1;">
+            <label>Nội dung hiển thị</label>
+            <input type="text" id="TextInput" value="OPEN WELCOME" placeholder="Nhập nội dung...">
+        </div>
+
+        <div class="control-group">
+            <label>Hiệu ứng chuyển động</label>
+            <select id="EffectSelect">
+                <option value="scroll-left">Chạy sang Trái</option>
+                <option value="static">Đứng yên</option>
+                <option value="blink">Nhấp nháy (Blink)</option>
+                <option value="typewriter">Gõ chữ (Typewriter)</option>
+                <option value="shake">Rung lắc (Shake)</option>
+                <option value="pulse">Nhịp tim (Pulse)</option>
+                <option value="scroll-up">Chạy lên</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label>Màu sắc & Giao diện</label>
+            <div style="display:flex; align-items: center; gap: 10px;">
+                <input type="color" id="ColorInput" value="#00ff00">
+                <label><input type="checkbox" id="RainbowCheck" checked> 7 Màu (ARGB)</label>
+            </div>
+            <label style="margin-top:5px;">Hình dạng LED</label>
+            <div class="btn-group">
+                <button onclick="setShape('circle')" id="btn-circle" class="active">Tròn</button>
+                <button onclick="setShape('rect')" id="btn-rect">Vuông</button>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>Tốc độ (Speed)</label>
+            <input type="range" id="SpeedInput" min="1" max="50" value="5">
+            <label>Kích thước LED (Zoom)</label>
+            <input type="range" id="ZoomInput" min="4" max="20" value="8">
+        </div>
+
+        <div class="control-group">
+            <label>Độ chói (Glow)</label>
+            <input type="range" id="GlowInput" min="0" max="30" value="10">
+            <label>Độ sáng LED tắt</label>
+            <input type="range" id="DimInput" min="0" max="50" value="10">
+        </div>
+
+        <div class="control-group" style="grid-column: 1 / -1;">
+            <label>Mẫu Cài Đặt Nhanh (Presets)</label>
+            <div class="btn-group">
+                <button class="preset-btn" onclick="applyPreset('default')">Mặc định</button>
+                <button class="preset-btn" onclick="applyPreset('cyberpunk')">Cyberpunk</button>
+                <button class="preset-btn" onclick="applyPreset('retro')">Retro Pixel</button>
+                <button class="preset-btn" onclick="applyPreset('store')">Biển Hiệu Đỏ</button>
+                <button class="preset-btn" onclick="applyPreset('matrix')">Ma Trận Xanh</button>
+            </div>
+        </div>
+
+        <button class="fullscreen" onclick="toggleFullScreen()">🖥️ Bật Chế Độ Toàn Màn Hình (Full Screen)</button>
+    </div>
+
+    <script>
+        /**
+         * HỆ THỐNG XỬ LÝ LED MATRIX V2
+         * Tối ưu hóa hiệu năng và sửa lỗi logic
+         */
+        
+        // --- CONFIGURATION ---
+        const config = {
+            text: "OPEN WELCOME",
+            color: "#00ffcc",
+            isRainbow: true,
+            effect: "scroll-left",
+            speed: 5,
+            ledSize: 8,     // Kích thước vẽ thực tế
+            ledGap: 1,      // Khoảng cách
+            density: 60,    // Độ phân giải chiều cao (số dòng led)
+            shape: 'circle', // circle | rect
+            glow: 15,
+            dimLevel: 0.1,  // Độ sáng của bóng led đang tắt (0.0 - 1.0)
+            font: "900 40px 'Roboto', sans-serif"
+        };
+
+        // --- GLOBAL VARIABLES ---
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Buffer canvas (để render chữ lấy dữ liệu pixel)
+        const buffer = document.createElement('canvas');
+        const bCtx = buffer.getContext('2d');
+
+        // Animation state
+        let frames = 0;
+        let offset = { x: 0, y: 0 };
+        let textWidth = 0;
+        let typewriterIndex = 0;
+        
+        // --- INITIALIZATION ---
+        function init() {
+            resize();
+            window.addEventListener('resize', resize);
+            loop();
+        }
+
+        function resize() {
+            // Thiết lập độ phân giải cho bảng LED
+            // Chiều cao cố định theo density config, chiều rộng tính theo tỷ lệ màn hình
+            const parent = document.getElementById('led-wrapper');
+            const aspect = parent.clientWidth / (parent.clientWidth / 3); // Giữ tỷ lệ ~ 3:1
+
+            buffer.height = config.density;
+            buffer.width = Math.floor(config.density * aspect); // Tự động tính chiều rộng
+
+            // Canvas hiển thị (Upscale lên để nhìn rõ trên màn hình)
+            canvas.width = parent.clientWidth;
+            canvas.height = parent.clientWidth / 3;
+            
+            // Reset trạng thái animation khi resize
+            offset.x = buffer.width;
+        }
+
+        // --- CORE LOGIC ---
+
+        function update() {
+            frames++;
+            const moveSpeed = config.speed * 0.2; // Hệ số tốc độ
+
+            // Xử lý logic từng hiệu ứng
+            switch(config.effect) {
+                case 'scroll-left':
+                    offset.x -= moveSpeed;
+                    if (offset.x < -(textWidth + 20)) {
+                        offset.x = buffer.width; // Loop lại
+                    }
+                    offset.y = 0;
+                    break;
+                
+                case 'scroll-up':
+                    offset.y -= moveSpeed * 0.5;
+                    if (offset.y < -buffer.height) offset.y = buffer.height;
+                    offset.x = (buffer.width - textWidth) / 2;
+                    break;
+
+                case 'static':
+                    offset.x = (buffer.width - textWidth) / 2;
+                    offset.y = 0;
+                    break;
+
+                case 'blink':
+                    offset.x = (buffer.width - textWidth) / 2;
+                    offset.y = 0;
+                    // Logic nhấp nháy xử lý ở phần render
+                    break;
+
+                case 'shake':
+                     offset.x = (buffer.width - textWidth) / 2 + (Math.random() * 4 - 2);
+                     offset.y = (Math.random() * 4 - 2);
+                     break;
+                
+                case 'typewriter':
+                    offset.x = 2; // Căn trái lề
+                    offset.y = 0;
+                    if (frames % (15 - Math.min(config.speed, 10)) === 0) {
+                        typewriterIndex++;
+                        if (typewriterIndex > config.text.length + 10) typewriterIndex = 0;
+                    }
+                    break;
+
+                case 'pulse':
+                    offset.x = (buffer.width - textWidth) / 2;
+                    offset.y = 0;
+                    break;
+            }
+        }
+
+        function renderBuffer() {
+            // Xóa buffer
+            bCtx.clearRect(0, 0, buffer.width, buffer.height);
+            bCtx.font = `bold ${buffer.height * 0.75}px 'Roboto', sans-serif`;
+            bCtx.textBaseline = 'middle';
+            bCtx.fillStyle = '#FFF'; // Luôn vẽ trắng để lấy map
+
+            // Đo chiều rộng chữ
+            const fullText = config.text;
+            textWidth = bCtx.measureText(fullText).width;
+
+            let renderText = fullText;
+
+            // Xử lý Text biến đổi
+            if (config.effect === 'typewriter') {
+                renderText = fullText.substring(0, typewriterIndex);
+                // Vẽ dấu nhắc con trỏ
+                if (frames % 20 < 10) renderText += "_";
+            }
+
+            // Xử lý tọa độ vẽ lên buffer
+            let drawX = offset.x;
+            let drawY = buffer.height / 2 + offset.y;
+
+            // Vẽ chữ lên buffer
+            // Lưu ý: Với hiệu ứng Blink, ta chỉ vẽ khi state là bật
+            let isVisible = true;
+            if (config.effect === 'blink') {
+                // Nhịp nháy phụ thuộc tốc độ: càng nhanh càng nháy lẹ
+                let blinkRate = Math.max(2, 20 - config.speed);
+                if (Math.floor(frames / blinkRate) % 2 === 0) isVisible = false;
+            }
+
+            if (isVisible) {
+                bCtx.fillText(renderText, drawX, drawY);
+            }
+        }
+
+        function draw() {
+            // 1. Vẽ nền bảng mạch (đen)
+            ctx.fillStyle = '#050505';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 2. Lấy dữ liệu pixel từ buffer
+            const imgData = bCtx.getImageData(0, 0, buffer.width, buffer.height);
+            const pixels = imgData.data;
+
+            // 3. Tính toán tỷ lệ vẽ
+            const rows = buffer.height;
+            const cols = buffer.width;
+            const scaleX = canvas.width / cols;
+            const scaleY = canvas.height / rows;
+            
+            // Kích thước LED hiển thị
+            // config.ledSize là giá trị tương đối (input zoom)
+            const radius = (Math.min(scaleX, scaleY) * (config.ledSize / 10)) / 2;
+
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    const i = (y * cols + x) * 4;
+                    const alpha = pixels[i + 3]; // Kênh Alpha
+
+                    // Tọa độ tâm led trên màn hình
+                    const cx = x * scaleX + scaleX / 2;
+                    const cy = y * scaleY + scaleY / 2;
+
+                    // A. Vẽ LED TẮT (Nền mờ)
+                    ctx.fillStyle = `rgba(30,30,30, ${config.dimLevel})`;
+                    ctx.shadowBlur = 0;
+                    drawShape(cx, cy, radius, false);
+
+                    // B. Vẽ LED SÁNG (Nếu alpha > 0)
+                    if (alpha > 50) {
+                        // Xác định màu
+                        let color = config.color;
+                        if (config.isRainbow) {
+                            // Tạo dải màu ARGB chạy
+                            const hue = (frames * 2 + x * 2) % 360;
+                            color = `hsl(${hue}, 100%, 50%)`;
+                        }
+
+                        // Hiệu ứng Pulse (Nhịp tim) - Điều chỉnh độ trong suốt alpha
+                        let outputAlpha = 1;
+                        if (config.effect === 'pulse') {
+                            outputAlpha = (Math.sin(frames * 0.1) + 1) / 2 * 0.5 + 0.5; // Dao động 0.5 -> 1.0
+                        }
+
+                        ctx.globalAlpha = outputAlpha;
+                        ctx.fillStyle = color;
+                        
+                        // Hiệu ứng Glow (Tỏa sáng)
+                        if (config.glow > 0) {
+                            ctx.shadowColor = color;
+                            ctx.shadowBlur = config.glow; // Dùng trực tiếp giá trị input
+                        } else {
+                            ctx.shadowBlur = 0;
+                        }
+
+                        drawShape(cx, cy, radius, true);
+                        ctx.globalAlpha = 1.0; // Reset
+                    }
+                }
+            }
+        }
+
+        function drawShape(x, y, r, isLit) {
+            ctx.beginPath();
+            if (config.shape === 'circle') {
+                // Vẽ hình tròn
+                ctx.arc(x, y, r, 0, Math.PI * 2);
+            } else {
+                // Vẽ hình vuông (trừ đi khoảng cách gap)
+                const size = r * 2;
+                ctx.rect(x - r, y - r, size, size);
+            }
+            ctx.fill();
+        }
+
+        function loop() {
+            update();
+            renderBuffer(); // Vẽ logic
+            draw();         // Vẽ hiển thị
+            requestAnimationFrame(loop);
+        }
+
+        // --- UI INTERACTION FUNCTIONS ---
+
+        // Helper: Shape buttons style
+        window.setShape = (shape) => {
+            config.shape = shape;
+            document.getElementById('btn-circle').className = shape === 'circle' ? 'active' : '';
+            document.getElementById('btn-rect').className = shape === 'rect' ? 'active' : '';
+        }
+
+        // Helper: Fullscreen
+        window.toggleFullScreen = () => {
+            const elem = document.getElementById("led-wrapper");
+            if (!document.fullscreenElement) {
+                elem.requestFullscreen().catch(err => alert(err));
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Helper: Presets
+        window.applyPreset = (type) => {
+            const inputs = {
+                text: document.getElementById('TextInput'),
+                color: document.getElementById('ColorInput'),
+                rainbow: document.getElementById('RainbowCheck'),
+                effect: document.getElementById('EffectSelect'),
+                speed: document.getElementById('SpeedInput'),
+                glow: document.getElementById('GlowInput'),
+                zoom: document.getElementById('ZoomInput'),
+                dim: document.getElementById('DimInput')
+            };
+
+            switch(type) {
+                case 'cyberpunk':
+                    inputs.text.value = "CYBER CITY";
+                    inputs.rainbow.checked = true;
+                    inputs.effect.value = 'scroll-left';
+                    inputs.speed.value = 8;
+                    inputs.glow.value = 20;
+                    setShape('rect');
+                    break;
+                case 'retro':
+                    inputs.text.value = "GAME OVER";
+                    inputs.color.value = "#ff0000";
+                    inputs.rainbow.checked = false;
+                    inputs.effect.value = 'blink';
+                    inputs.speed.value = 2; // Blink chậm
+                    inputs.zoom.value = 15; // To
+                    setShape('rect');
+                    break;
+                case 'store':
+                    inputs.text.value = "OPEN 24/7";
+                    inputs.color.value = "#ff0000";
+                    inputs.rainbow.checked = false;
+                    inputs.effect.value = 'static';
+                    inputs.glow.value = 15;
+                    inputs.zoom.value = 10;
+                    setShape('circle');
+                    break;
+                case 'matrix':
+                    inputs.text.value = "THE MATRIX";
+                    inputs.color.value = "#00ff00";
+                    inputs.rainbow.checked = false;
+                    inputs.effect.value = 'typewriter';
+                    inputs.dim.value = 20; // Nền sáng hơn chút
+                    setShape('rect');
+                    break;
+                default:
+                    // Reset to default
+                    inputs.text.value = "HELLO VIETNAM";
+                    inputs.rainbow.checked = true;
+                    inputs.effect.value = 'scroll-left';
+                    inputs.speed.value = 5;
+                    inputs.glow.value = 10;
+                    setShape('circle');
+            }
+            // Trigger events manually to update config
+            inputs.text.dispatchEvent(new Event('input'));
+            inputs.color.dispatchEvent(new Event('input'));
+            inputs.rainbow.dispatchEvent(new Event('change'));
+            inputs.effect.dispatchEvent(new Event('change'));
+            inputs.speed.dispatchEvent(new Event('input'));
+            inputs.glow.dispatchEvent(new Event('input'));
+            inputs.dim.dispatchEvent(new Event('input'));
+            inputs.zoom.dispatchEvent(new Event('input'));
+        }
+
+        // --- EVENT LISTENERS (Sync UI with Config) ---
+        const uiMap = [
+            { id: 'TextInput', key: 'text', event: 'input' },
+            { id: 'ColorInput', key: 'color', event: 'input' },
+            { id: 'RainbowCheck', key: 'isRainbow', event: 'change', isCheck: true },
+            { id: 'EffectSelect', key: 'effect', event: 'change' },
+            { id: 'SpeedInput', key: 'speed', event: 'input', isNum: true },
+            { id: 'ZoomInput', key: 'ledSize', event: 'input', isNum: true },
+            { id: 'GlowInput', key: 'glow', event: 'input', isNum: true },
+        ];
+
+        uiMap.forEach(item => {
+            const el = document.getElementById(item.id);
+            el.addEventListener(item.event, (e) => {
+                if (item.isCheck) config[item.key] = e.target.checked;
+                else if (item.isNum) config[item.key] = parseFloat(e.target.value);
+                else config[item.key] = e.target.value;
+
+                // Reset logic phụ khi input đổi
+                if (item.id === 'TextInput') typewriterIndex = 0;
+                if (item.id === 'EffectSelect') {
+                    offset.x = buffer.width;
+                    typewriterIndex = 0;
+                }
+                if (item.id === 'ColorInput') {
+                    document.getElementById('RainbowCheck').checked = false;
+                    config.isRainbow = false;
+                }
+            });
+        });
+
+        document.getElementById('DimInput').addEventListener('input', (e) => {
+            config.dimLevel = parseInt(e.target.value) / 100;
+        });
+
+        // Start
+        init();
+
+    </script>
+</body>
+</html>
