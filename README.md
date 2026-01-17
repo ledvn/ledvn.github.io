@@ -1,4 +1,4 @@
-#Phiên bản V2.0 dưới đây đã được viết lại hoàn toàn (Refactor code) với tư duy lập trình hướng đối tượng (OOP) để tối ưu hiệu năng.
+# Phiên bản V2.0 dưới đây đã được viết lại hoàn toàn (Refactor code) với tư duy lập trình hướng đối tượng (OOP) để tối ưu hiệu năng.
 
 Các nâng cấp lớn trong bản V2.0 này:
 Sửa lỗi Nhấp nháy: Hoạt động chuẩn xác theo nhịp điệu.
@@ -23,7 +23,7 @@ Presets (Mẫu có sẵn): Các nút bấm nhanh để chọn phong cách (Cyber
 
 
 
-#Các tính năng mới chi tiết:
+# Các tính năng mới chi tiết:
 Sửa lỗi Nhấp nháy (Blink):
 
 Trước đây nhấp nháy dựa trên timer không đồng bộ, giờ đây dựa trên số khung hình (frame rate). Bạn chỉnh thanh Tốc độ (Speed) càng thấp thì nháy càng chậm (nhịp thở), kéo cao lên thì nháy loạn xạ như đèn vũ trường.
