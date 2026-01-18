@@ -18,7 +18,7 @@ Chỉnh độ chói (Glow): Tăng giảm độ tỏa sáng của đèn.
 Presets (Mẫu có sẵn): Các nút bấm nhanh để chọn phong cách (Cyberpunk, Retro, Shop, v.v.).
 
 
-
+ 
 
 
 
