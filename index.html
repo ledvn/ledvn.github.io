@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="vi" prefix="og: https://ogp.me/ns#">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    
+    <title>LED Matrix V13 - Tùy Chỉnh Tốc Độ & Viền Fullscreen</title>
+    <meta name="description" content="Công cụ tạo bảng LED chạy chữ Online V13. Tính năng mới: Tốc độ viền độc lập, fix lỗi hiển thị Fullscreen. Hiệu ứng Neon, Glitch, Laser mượt mà.">
+    <meta name="keywords" content="led matrix online, bảng led chạy chữ, led simulator v13, tạo biển led, led pixel perfect, bảng điện tử">
+    <meta name="author" content="LED Matrix Tool">
+    <meta name="theme-color" content="#000000">
+    <meta name="robots" content="index, follow">
+    
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="LED Matrix V13">
+
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://yourwebsite.com/">
+    <meta property="og:title" content="LED Matrix V13 - Tạo Biển LED Chuyên Nghiệp">
+    <meta property="og:description" content="Tự tạo bảng LED cổ vũ với 2 tốc độ riêng biệt cho chữ và viền.">
+    <meta property="og:image" content="https://yourwebsite.com/thumbnail-v13.jpg">
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "LED Matrix Simulator V13",
+      "url": "https://yourwebsite.com",
+      "description": "Ứng dụng mô phỏng bảng LED với khả năng điều khiển tốc độ độc lập cho viền và nội dung.",
+      "applicationCategory": "MultimediaApplication",
+      "operatingSystem": "All",
+      "offers": { "@type": "Offer", "price": "0" }
+    }
+    </script>
+
+    <style>
+        :root { --bg: #050505; --panel: #121212; --accent: #00e5ff; --text: #f0f0f0; --border: #333; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', Roboto, sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overscroll-behavior: none; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        header { width: 100%; background: #000; padding: 15px; text-align: center; border-bottom: 1px solid var(--border); z-index: 10; }
+        h1 { margin: 0; color: var(--accent); font-size: 1.5rem; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 15px rgba(0, 229, 255, 0.4); }
+
+        #screen-wrapper {
+            position: relative; margin: 20px auto; padding: 0;
+            border: 10px solid #1a1a1a; border-radius: 6px;
+            background: #000; box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            overflow: hidden; cursor: default;
+            max-width: 95vw;
+            min-height: 200px; 
+        }
+        
+        canvas { display: block; background: #000; width: 100%; height: auto; image-rendering: pixelated; }
+
+        .controls {
+            background: var(--panel); width: 95%; max-width: 1200px; padding: 20px; border-radius: 12px;
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px;
+            border: 1px solid var(--border); margin-bottom: 60px;
+        }
+
+        .box { background: #1e1e1e; padding: 12px; border-radius: 6px; border-left: 3px solid #444; transition: all 0.3s; }
+        .box:hover { border-left-color: var(--accent); background: #252525; transform: translateY(-2px); }
+        .box-title { font-size: 0.8rem; color: #888; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
+
+        input[type="text"], select { width: 100%; padding: 8px; background: #000; border: 1px solid #444; color: #fff; border-radius: 4px; outline: none; font-size: 0.9rem; }
+        
+        /* Custom Slider Range */
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 6px; background: #444; border-radius: 3px; cursor: pointer; margin-top: 5px; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; background: var(--accent); border-radius: 50%; cursor: pointer; transition: 0.2s; }
+        input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); box-shadow: 0 0 10px var(--accent); }
+
+        input[type="color"] { width: 100%; height: 35px; border: none; padding: 0; background: none; cursor: pointer; }
+
+        .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--accent); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        .btn-full {
+            grid-column: 1 / -1; background: linear-gradient(135deg, var(--accent), #007aff);
+            color: #000; border: none; padding: 16px; font-weight: 900; text-transform: uppercase;
+            cursor: pointer; border-radius: 6px; font-size: 1rem; letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(0, 229, 255, 0.3); transition: 0.3s;
+        }
+        .btn-full:hover { box-shadow: 0 6px 20px rgba(0, 229, 255, 0.5); transform: scale(1.01); }
+
+        /* Fullscreen Logic Fixes */
+        :fullscreen { background: #000; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        :fullscreen #screen-wrapper { 
+            width: 100vw !important; height: 100vh !important; 
+            border: none; margin: 0; padding: 0; 
+            border-radius: 0; box-shadow: none; max-width: none; 
+            display: flex; align-items: center; justify-content: center;
+        }
+        :fullscreen canvas { width: 100%; height: 100%; object-fit: contain; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>LED Matrix V13 <span style="font-size:0.6em; background:var(--accent); color:#000; padding:2px 5px; border-radius:3px;">DUAL SPEED</span></h1>
+    </header>
+
+    <div id="screen-wrapper">
+        <canvas id="ledCanvas"></canvas>
+    </div>
+
+    <main class="controls">
+        <div class="box" style="border-left-color: #ff0055; background: #1a0505;">
+            <div class="box-title">
+                <span>⚡ HỆ THỐNG</span>
+                <label class="switch"><input type="checkbox" id="chkWakeLock"><span class="slider"></span></label>
+            </div>
+            <div style="font-size:0.8rem; color:#aaa; margin-top:5px;">
+                Màn hình luôn sáng: <span id="statusWakeLock" style="color:#ff0055; font-weight:bold;">TẮT</span>
+            </div>
+        </div>
+
+        <div class="box">
+            <div class="box-title">Nội dung</div>
+            <input type="text" id="inpText" value="LED MATRIX V13" placeholder="Nhập chữ chạy...">
+        </div>
+
+        <div class="box">
+            <div class="box-title">Hiệu ứng chữ</div>
+            <select id="selTextAnim">
+                <optgroup label="Cơ bản">
+                    <option value="scrollLeft">⬅️ Cuộn Trái</option>
+                    <option value="scrollRight">➡️ Cuộn Phải</option>
+                    <option value="static">🛑 Đứng Yên</option>
+                </optgroup>
+                <optgroup label="Chuyển động">
+                    <option value="waveH">🌊 Sóng Ngang</option>
+                    <option value="waveV">🐬 Cá Heo</option>
+                    <option value="bounce">🏀 Bóng Nảy</option>
+                    <option value="spread">💥 Vụ Nổ</option>
+                    <option value="converge">🎯 Tụ Hội</option>
+                </optgroup>
+                <optgroup label="Kỹ xảo">
+                    <option value="typewriter">⌨️ Gõ Máy</option>
+                    <option value="glitch">⚡ Nhiễu Sóng</option>
+                    <option value="laser">🔦 Quét Laser</option>
+                    <option value="blink">🚨 Nhấp Nháy</option>
+                    <option value="matrix">🤖 Ma Trận Matrix</option>
+                    <option value="neon">✨ Neon Pulse</option>
+                </optgroup>
+            </select>
+        </div>
+
+        <div class="box">
+            <div class="box-title">Màu Chữ & Bảng Màu</div>
+            <div style="margin-bottom:5px">
+                <select id="selTextPalette">
+                    <option value="solid">🔴 Màu Đơn (Chọn bên dưới)</option>
+                    <option value="vn">🇻🇳 Việt Nam (Đỏ/Vàng)</option>
+                    <option value="xmas">🎄 Noel (Đỏ/Xanh/Trắng)</option>
+                    <option value="cyber">🤖 Cyberpunk (Hồng/Cyan)</option>
+                    <option value="sunset">🌅 Hoàng Hôn (Tím/Cam)</option>
+                    <option value="cool">❄️ Mát Mẻ (Xanh Dương/Trắng)</option>
+                    <option value="rainbow">🌈 Cầu Vồng (7 màu)</option>
+                    <option value="pastel">🍬 Kẹo Ngọt (Pastel)</option>
+                </select>
+            </div>
+            <input type="color" id="inpColor" value="#00e5ff">
+             <select id="selColorMode" style="margin-top:8px">
+                <option value="normal">Màu: Bình thường</option>
+                <option value="rainbowFlow">Màu: 🌊 Cầu Vồng Trôi</option>
+                <option value="fire">Màu: 🔥 Lửa Cháy</option>
+                <option value="disco">Màu: 🕺 Disco Random</option>
+            </select>
+        </div>
+
+        <div class="box">
+            <div class="box-title">Cấu hình CHỮ</div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <label>Tốc độ Chữ:</label> <input type="range" id="rngSpeed" min="0" max="25" step="0.5" value="5" style="width:55%">
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <label>Cỡ chữ:</label> <input type="range" id="rngSize" min="20" max="200" value="60" style="width:55%">
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <label>Độ sáng:</label> <input type="range" id="rngBright" min="20" max="150" value="100" style="width:55%">
+            </div>
+        </div>
+
+        <div class="box" style="border-left-color: #ffd700;">
+            <div class="box-title" style="color:#ffd700">Cấu hình VIỀN (Độc lập)</div>
+            <select id="selBorderPat">
+                <option value="solid">Kẻ Liền</option>
+                <option value="stars">✨ Sao Lấp Lánh</option>
+                <option value="dots">⚪ Chấm Bi (Dots)</option>
+                <option value="morse">🆘 Mã SOS</option>
+                <option value="runway">✈️ Sân Bay (Runway)</option>
+                <option value="diamonds">💎 Hình Thoi</option>
+                <option value="hearts">💖 Trái Tim</option>
+                <option value="arrows">⏩ Mũi Tên</option>
+                <option value="barber">💈 Tiệm Tóc</option>
+                <option value="binary">1010 Nhị Phân</option>
+                <option value="zigzag">⚡ Zíc Zắc</option>
+                <option value="brackets">[ ] Ngoặc Vuông</option>
+            </select>
+            
+            <select id="selBorderAnim" style="margin-top:5px">
+                <option value="snake">🐍 Rắn Săn Mồi (Chạy vòng)</option>
+                <option value="chase">🏃 Rượt Đuổi</option>
+                <option value="collision">💥 Va Chạm 2 bên</option>
+                <option value="breathing">🫁 Hô Hấp (Mờ dần)</option>
+                <option value="scanner">🚨 Cảnh Sát (Nháy)</option>
+                <option value="rainbow">🌈 RGB Flow</option>
+                <option value="none">❌ Tắt Viền</option>
+            </select>
+            
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; border-top:1px dashed #444; padding-top:5px;">
+                <label>Tốc độ Viền:</label> 
+                <input type="range" id="rngBorderSpeed" min="0" max="25" step="0.5" value="4" style="width:55%" title="Chỉnh tốc độ chạy của viền">
+            </div>
+
+             <div style="margin-top:5px">
+                <select id="selBorderPalette">
+                    <option value="same">Màu Viền: Cùng màu Chữ</option>
+                    <option value="solid">Màu Viền: ⚪ Trắng</option>
+                    <option value="vn">Màu Viền: 🇻🇳 Việt Nam</option>
+                    <option value="xmas">Màu Viền: 🎄 Noel</option>
+                    <option value="cyber">Màu Viền: 🤖 Cyberpunk</option>
+                    <option value="rainbow">Màu Viền: 🌈 Cầu Vồng</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="box">
+            <div class="box-title">Hình dáng bóng LED</div>
+            <select id="selShape">
+                <option value="circle">⚪ Bóng Tròn</option>
+                <option value="square">⬜ Bóng Vuông</option>
+                <option value="pixel">▪️ Pixel (Mịn)</option>
+            </select>
+        </div>
+
+        <button class="btn-full" id="fsBtn">🖥️ CHẾ ĐỘ TOÀN MÀN HÌNH (FULLSCREEN)</button>
+    </main>
+
+    <script>
+        /**
+         * LED MATRIX V13
+         * Features: Dual Speed Engine, Fullscreen Border Fix, Independent Accumulators
+         */
+        const canvas = document.getElementById('ledCanvas');
+        const bufferCanvas = document.createElement('canvas'); 
+        const ctx = canvas.getContext('2d', { alpha: false });
+        const bufCtx = bufferCanvas.getContext('2d', { willReadFrequently: true });
+        
+        const PALETTES = {
+            vn: ['#ff0000', '#ffff00'], 
+            xmas: ['#ff0000', '#00ff00', '#ffffff'], 
+            cyber: ['#00e5ff', '#ff0055', '#7000ff'], 
+            sunset: ['#ff0055', '#ff9900', '#8800ff'], 
+            cool: ['#00aaff', '#ffffff', '#0055ff'],
+            rainbow: ['#ff0000', '#ff7700', '#ffff00', '#00ff00', '#0000ff', '#8b00ff', '#ff00ff'],
+            pastel: ['#ffb3ba', '#ffdfba', '#ffffba', '#baffc9', '#bae1ff'],
+            solid: ['#ffffff']
+        };
+
+        // --- WAKE LOCK ---
+        let wakeLock = null;
+        const chkWakeLock = document.getElementById('chkWakeLock');
+        async function toggleWakeLock(state) {
+            if (state && 'wakeLock' in navigator) {
+                try { wakeLock = await navigator.wakeLock.request('screen'); document.getElementById('statusWakeLock').textContent = "BẬT"; document.getElementById('statusWakeLock').style.color = "#00ff88"; } 
+                catch (err) {}
+            } else {
+                if (wakeLock !== null) await wakeLock.release(); wakeLock = null; document.getElementById('statusWakeLock').textContent = "TẮT"; document.getElementById('statusWakeLock').style.color = "#ff0055";
+            }
+        }
+        chkWakeLock.addEventListener('change', () => toggleWakeLock(chkWakeLock.checked));
+
+        // --- SYSTEM STATE ---
+        const sys = { 
+            rows: 64, cols: 192, px: 4, gap: 1, 
+            width: 0, height: 0, 
+            matrixDrops: [], 
+            textX: 0, lastAnim: '',
+            dpr: window.devicePixelRatio || 1,
+            // New Accumulators for smoother speed control
+            textFrame: 0,
+            borderFrame: 0
+        };
+        
+        const ui = {
+            text: document.getElementById('inpText'), textAnim: document.getElementById('selTextAnim'),
+            colorMode: document.getElementById('selColorMode'), color: document.getElementById('inpColor'),
+            textPalette: document.getElementById('selTextPalette'), borderPalette: document.getElementById('selBorderPalette'),
+            speed: document.getElementById('rngSpeed'), 
+            borderSpeed: document.getElementById('rngBorderSpeed'), // New Control
+            size: document.getElementById('rngSize'),
+            borderPat: document.getElementById('selBorderPat'), borderAnim: document.getElementById('selBorderAnim'),
+            shape: document.getElementById('selShape'), bright: document.getElementById('rngBright')
+        };
+
+        for(let i=0; i<60; i++) sys.matrixDrops.push({x: Math.random()*300, y: Math.random()*-100, s: Math.random()*2+1});
+
+        // --- RESIZE LOGIC (FIXED FOR FULLSCREEN) ---
+        function resize() {
+            if (document.fullscreenElement) {
+                sys.px = 6; sys.gap = (ui.shape.value === 'pixel') ? 0 : 1;
+                const unit = sys.px + sys.gap;
+                sys.cols = Math.ceil(window.innerWidth / unit);
+                sys.rows = Math.ceil(window.innerHeight / unit);
+            } else {
+                sys.px = 4; sys.gap = (ui.shape.value === 'pixel') ? 0 : 1;
+                sys.cols = 192; sys.rows = 64;
+            }
+            const logicW = sys.cols * (sys.px + sys.gap) + sys.gap;
+            const logicH = sys.rows * (sys.px + sys.gap) + sys.gap;
+            sys.width = logicW; sys.height = logicH;
+
+            if(bufferCanvas.width !== logicW) bufferCanvas.width = logicW;
+            if(bufferCanvas.height !== logicH) bufferCanvas.height = logicH;
+            bufCtx.imageSmoothingEnabled = false; 
+
+            const displayW = logicW; const displayH = logicH;
+            canvas.style.width = (!document.fullscreenElement) ? '100%' : `${displayW}px`;
+            canvas.style.height = (!document.fullscreenElement) ? 'auto' : `${displayH}px`;
+            canvas.width = Math.floor(displayW * sys.dpr);
+            canvas.height = Math.floor(displayH * sys.dpr);
+            ctx.setTransform(sys.dpr, 0, 0, sys.dpr, 0, 0);
+        }
+
+        function getPaletteColor(paletteId, index) {
+            if (!PALETTES[paletteId]) return '#ffffff';
+            const colors = PALETTES[paletteId];
+            return colors[index % colors.length];
+        }
+
+        // --- TEXT RENDERING ---
+        function drawSourceToBuffer() {
+            const text = ui.text.value; const anim = ui.textAnim.value;
+            const size = parseInt(ui.size.value);
+            // Use Text Speed Accumulator
+            const spd = parseFloat(ui.speed.value); 
+            
+            bufCtx.clearRect(0,0,sys.width, sys.height);
+
+            if(anim === 'matrix') {
+                bufCtx.font = `${size/2}px monospace`;
+                sys.matrixDrops.forEach(d => {
+                    d.y += d.s * (spd/5); if(d.y > sys.rows) d.y = -20;
+                    bufCtx.fillStyle = '#0f0'; 
+                    bufCtx.fillText(String.fromCharCode(0x30A0 + Math.random() * 96), Math.floor(d.x * (sys.px+sys.gap)), Math.floor(d.y * (sys.px+sys.gap)));
+                });
+                return;
+            }
+
+            bufCtx.font = `900 ${size}px monospace`; 
+            bufCtx.textBaseline = 'middle';
+            let totalWidth = bufCtx.measureText(text).width;
+            
+            if(sys.lastAnim !== anim) { sys.textX = 0; sys.lastAnim = anim; }
+            
+            if(anim === 'scrollLeft') { sys.textX -= spd; if(sys.textX < -totalWidth) sys.textX = sys.width; } 
+            else if(anim === 'scrollRight') { sys.textX += spd; if(sys.textX > sys.width) sys.textX = -totalWidth; }
+            else if(anim === 'bounce') sys.textX = (Math.sin(sys.textFrame * 0.05) + 1)/2 * (sys.width - totalWidth);
+            else sys.textX = (sys.width - totalWidth)/2;
+
+            let cursorX = sys.textX;
+            const mode = ui.colorMode.value;
+            const palId = ui.textPalette.value;
+
+            // Typewriter
+            let charsToShow = text.length;
+            if(anim === 'typewriter') {
+                const cycle = Math.floor(sys.textFrame / 10); 
+                charsToShow = cycle % (text.length + 5);
+            }
+
+            for(let i=0; i<text.length; i++) {
+                if(i >= charsToShow) break; 
+                let char = text[i]; 
+                if(anim === 'glitch' && Math.random() < 0.05) char = String.fromCharCode(33 + Math.random() * 90);
+
+                const charW = bufCtx.measureText(char).width;
+                let drawX = cursorX; let drawY = sys.height / 2;
+
+                // Anim Effects
+                if (anim === 'waveH') drawY += Math.sin((sys.textFrame * 0.1) + (i * 0.5)) * (size/3);
+                else if (anim === 'waveV') { 
+                    drawY += Math.sin((sys.textFrame * 0.1) + (i * 0.8)) * (size/4); 
+                    drawX += Math.cos((sys.textFrame * 0.1) + (i * 0.8)) * 10; 
+                }
+                else if (anim === 'spread') {
+                    const centerIdx = text.length/2;
+                    const spreadAmount = Math.sin(sys.textFrame * 0.05) * (sys.width/2);
+                    drawX += (i - centerIdx) * (spreadAmount / 10);
+                }
+                else if (anim === 'converge') {
+                     const center = (sys.width - totalWidth)/2; const relX = cursorX - sys.textX; const finalX = center + relX;
+                     const dist = (sys.textFrame * 2) % (sys.width * 1.5);
+                     if(dist < sys.width/2) drawX = (i%2==0 ? -100 : sys.width+100) + (finalX - (i%2==0 ? -100 : sys.width+100)) * (dist/(sys.width/2));
+                     else drawX = finalX;
+                }
+
+                if (anim === 'blink' && (Math.floor(sys.textFrame / 5) % 2 === 0)) { cursorX += charW; continue; }
+
+                let fill;
+                if (mode === 'normal') {
+                    if (palId === 'solid') fill = ui.color.value;
+                    else fill = getPaletteColor(palId, i);
+                } 
+                else if(mode === 'rainbowFlow') fill = `hsl(${(sys.textFrame * 2 + drawX/2)%360}, 100%, 50%)`;
+                else if(mode === 'fire') fill = `hsl(${Math.random()*50}, 100%, 50%)`;
+                else if(mode === 'disco') fill = `hsl(${Math.random()*360}, 100%, 50%)`;
+
+                bufCtx.fillStyle = fill;
+                if(anim === 'neon') { bufCtx.shadowBlur = 10; bufCtx.shadowColor = fill; }
+                
+                bufCtx.fillText(char, Math.round(drawX), Math.round(drawY));
+                bufCtx.shadowBlur = 0; cursorX += charW;
+            }
+
+            if(anim === 'laser') {
+                const laserX = (sys.textFrame * 5) % sys.width;
+                bufCtx.fillStyle = '#fff'; bufCtx.fillRect(laserX, 0, 5, sys.height);
+            }
+        }
+
+        // --- NEW BORDER LOGIC (FIXED) ---
+        function getBorderColor(idx, perimeter) {
+            const pat = ui.borderPat.value; const anim = ui.borderAnim.value;
+            if(anim === 'none') return null;
+            
+            // Use Border Speed Accumulator
+            const spd = parseFloat(ui.borderSpeed.value); 
+            // Calculate effective index based on accumulated frame
+            let offset = (anim === 'snake' || anim === 'chase') ? -sys.borderFrame : sys.borderFrame;
+            let pIdx = Math.floor(idx + offset);
+            
+            let visible = true;
+            const getPat = (p, i) => p[((i % p.length) + p.length) % p.length];
+
+            if(pat === 'hearts') visible = getPat([0,1,1,0,1,1,1,1,0,1,1,0], pIdx);
+            else if(pat === 'arrows') visible = getPat([1,1,0,0,1,1,0,0], pIdx);
+            else if(pat === 'binary') visible = (Math.random() > 0.5);
+            else if(pat === 'brackets') visible = getPat([1,1,0,0,0,1,1,0], pIdx);
+            else if(pat === 'stars') visible = getPat([1,0,0,0,0,1,0,0,1,0], pIdx);
+            else if(pat === 'dots') visible = getPat([1,0,1,0], pIdx);
+            else if(pat === 'morse') visible = getPat([1,0,1,0,1,0,0,1,1,1,0,1,1,1,0,1,1,1,0,0,0,1,0,1,0,1,0,0,0], pIdx); 
+            else if(pat === 'runway') visible = getPat([1,1,1,0,0,0], pIdx);
+            else if(pat === 'diamonds') visible = getPat([1,0,0,1,0,0], pIdx);
+
+            if(!visible && pat !== 'solid') return null;
+
+            let bColor = '#ffffff';
+            const bPal = ui.borderPalette.value;
+            if (bPal === 'same') bColor = ui.color.value;
+            else if (bPal === 'solid') bColor = '#ffffff';
+            else bColor = getPaletteColor(bPal, idx);
+
+            // Animation Logic using sys.borderFrame
+            if(anim === 'snake') { 
+                const pos = ((Math.floor(idx + sys.borderFrame) % perimeter) + perimeter) % perimeter;
+                return (pos < perimeter/2) ? bColor : null; // Half snake
+            }
+            if(anim === 'collision') {
+                const shift = sys.borderFrame;
+                const p1 = (shift % perimeter);
+                const p2 = (perimeter - (shift % perimeter));
+                if(Math.abs(idx - p1) < 6 || Math.abs(idx - p1 - perimeter) < 6) return '#ff0000';
+                if(Math.abs(idx - p2) < 6 || Math.abs(idx - p2 + perimeter) < 6) return '#0000ff'; 
+                return '#222';
+            }
+            if(anim === 'rainbow') return `hsl(${(idx*2 + sys.borderFrame)%360}, 100%, 50%)`;
+            
+            return bColor;
+        }
+
+        function animate() {
+            // Update accumulators based on separate speeds
+            sys.textFrame += parseFloat(ui.speed.value);
+            sys.borderFrame += parseFloat(ui.borderSpeed.value);
+
+            resize(); 
+            drawSourceToBuffer();
+
+            const bufferData = bufCtx.getImageData(0, 0, sys.width, sys.height).data;
+            ctx.fillStyle = '#000'; ctx.fillRect(0, 0, sys.width, sys.height);
+
+            const brightnessScale = parseInt(ui.bright.value) / 100;
+            const shape = ui.shape.value;
+            const radius = sys.px / 2;
+            const fullUnit = sys.px + sys.gap;
+            const isCircle = shape === 'circle';
+            const doGlow = brightnessScale > 0.8 && shape !== 'pixel';
+
+            // Draw Inner Grid
+            for(let r = 0; r < sys.rows; r++) {
+                for(let c = 0; c < sys.cols; c++) {
+                    const x = sys.gap + c * fullUnit;
+                    const y = sys.gap + r * fullUnit;
+                    const centerX = Math.floor(x + radius);
+                    const centerY = Math.floor(y + radius);
+                    const pixelIndex = (centerY * sys.width + centerX) * 4;
+                    const alpha = bufferData[pixelIndex + 3];
+                    
+                    if(alpha > 50) {
+                        const rV = bufferData[pixelIndex];
+                        const gV = bufferData[pixelIndex + 1];
+                        const bV = bufferData[pixelIndex + 2];
+                        ctx.fillStyle = `rgba(${rV},${gV},${bV},${(alpha/255) * brightnessScale})`;
+                        if(doGlow) { ctx.shadowBlur = sys.px; ctx.shadowColor = ctx.fillStyle; } else ctx.shadowBlur = 0;
+                        if(isCircle) { ctx.beginPath(); ctx.arc(x + radius, y + radius, radius, 0, Math.PI*2); ctx.fill(); }
+                        else ctx.fillRect(x, y, sys.px, sys.px);
+                    }
+                }
+            }
+            ctx.shadowBlur = 0;
+
+            // --- BORDER DRAWING (COORDINATE MAPPING FIX) ---
+            const perimeter = 2 * sys.cols + 2 * (sys.rows - 2); 
+            let bIdx = 0;
+            
+            const drawBorderLed = (c, r, color) => {
+                const x = sys.gap + c * fullUnit;
+                const y = sys.gap + r * fullUnit;
+                ctx.fillStyle = color;
+                if(isCircle) { ctx.beginPath(); ctx.arc(x+radius, y+radius, radius, 0, Math.PI*2); ctx.fill(); }
+                else ctx.fillRect(x, y, sys.px, sys.px);
+            };
+
+            if(ui.borderAnim.value !== 'none') {
+                // Top (0 -> cols-1)
+                for(let c = 0; c < sys.cols; c++) {
+                    const col = getBorderColor(bIdx++, perimeter); if(col) drawBorderLed(c, 0, col);
+                }
+                // Right (1 -> rows-2)
+                for(let r = 1; r < sys.rows - 1; r++) {
+                    const col = getBorderColor(bIdx++, perimeter); if(col) drawBorderLed(sys.cols-1, r, col);
+                }
+                // Bottom (cols-1 -> 0)
+                for(let c = sys.cols - 1; c >= 0; c--) {
+                    const col = getBorderColor(bIdx++, perimeter); if(col) drawBorderLed(c, sys.rows-1, col);
+                }
+                // Left (rows-2 -> 1)
+                for(let r = sys.rows - 2; r > 0; r--) {
+                    const col = getBorderColor(bIdx++, perimeter); if(col) drawBorderLed(0, r, col);
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        document.getElementById('fsBtn').onclick = () => {
+            const el = document.getElementById('screen-wrapper');
+            if(!document.fullscreenElement) {
+                if (el.requestFullscreen) el.requestFullscreen();
+                else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        };
+
+        requestAnimationFrame(animate);
+    </script>
+</body>
+</html>
